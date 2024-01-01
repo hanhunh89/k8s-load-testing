@@ -161,6 +161,8 @@ pod에서 tomcat이 다 올리오지 않았는데 loadbalaner가 해당 pod로 �
 probe에는 startup, live, readiness가 있다. <br>
 * 참고 : https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ <br><br>
 pod가 준비된 상태에서 서비스를 시행하기 위하여, readiness probe를 사용해보자<br>
+readiness probe를 사용하면, probe가 준비된 상태를 정의할 수 있다. <br>
+우리가 원하는 상태를 충족해야지만, loadbalancer에서 pod에 패킷을 보낸다<br>
 probe를 적용하기 위해 tomcat-deploy.yaml을 수정하자
 ```
 # tomcat-deploy.yaml
