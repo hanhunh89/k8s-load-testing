@@ -284,3 +284,16 @@ a에서 b로 바뀌는 와중에 패킷이 하나 빠지는 것을 볼 수 있�
 중간에 302를 return하면서 제대로 index.html을 불러오지 못하는 것도 있다. <br>
 
 단 하나의 패킷도 누락되지 않게 하려면 어떻게 할까? <br> 
+
+이를 위해서는 pod가 종료되는 절차를 알아야 한다. <br>
+```
+1. Pod 삭제 또는 스케일 다운 등 종료 요청이 발생
+2. gracefulShutdownPeriod 시작
+3. kubelet이 TERM 신호를 보내 graceful shutdown 시도
+4. Pod의 상태가 "Terminating"으로 변경
+5. endpoints에서 pod가 제거되면서 loadbalancer에서 pod에게 패킷 전송 중단
+6. preStop 핸들러 실행
+7. gracefulShutdownPeriod가 지난 후 Pod이 완전히 종료됩니다
+```
+loadbalancer에서 패킷 전송이 중단된 이후에 시간을 두어서<br>
+pod가 패킷을 모두 처리하기 위해서는 prestop을 사용해야 한다. 
