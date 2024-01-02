@@ -238,3 +238,49 @@ readiness를 위한 패킷을 발생시키면서, 캐시를 준비하는 역할�
 
 
 ## pod가 줄어들면서 패킷이 빠지는데요...?
+pod가 증가할 때 패킷이 빠지는 현상을 처리했다.<br>
+그러면 pod가 줄어들 때도 패킷이 빠질까...?<br>
+정답은 yes.<br>
+rolling update를 시행하면 old version의 pod가 순차적으로 종료된다.<br>
+이때 pod가 서비스를 종료하는 과정에서 loadbalancer가 패킷을 해당 pod에 분배하면 패킷이 빠지게 된다.<br>
+```
+while true; do
+   curl  -s -w "HTTP status : %{http_code}  response time: %{time_total}\n" -L http://35.229.58.204/a
+   sleep 0.01
+done
+```
+a 디렉토리에는 index.html파일이 있고 해당 파일은 'a'를 return한다.<br>
+rolling update를 시행하며 a를 b로 바꾸었다. <br>
+```
+HTTP status : 200  response time: 0.172856
+a
+HTTP status : 200  response time: 0.174321
+a
+HTTP status : 200  response time: 0.173549
+b
+HTTP status : 200  response time: 0.171092
+b
+HTTP status : 200  response time: 0.174109
+b
+HTTP status : 200  response time: 0.175673
+HTTP status : 302  response time: 0.228071
+b
+HTTP status : 200  response time: 0.173880
+
+HTTP status : 000  response time: 130.550242 # http status 000을 나타낸다. 패킷이 빠진다. 
+a
+HTTP status : 200  response time: 0.175524
+a
+HTTP status : 200  response time: 0.172615
+a
+HTTP status : 200  response time: 0.173165
+a
+HTTP status : 200  response time: 0.173343
+a
+HTTP status : 200  response time: 0.173216
+a
+```
+a에서 b로 바뀌는 와중에 패킷이 하나 빠지는 것을 볼 수 있다.<br>
+중간에 302를 return하면서 제대로 index.html을 불러오지 못하는 것도 있다. <br>
+
+단 하나의 패킷도 누락되지 않게 하려면 어떻게 할까? <br> 
