@@ -225,7 +225,12 @@ kubectl apply -f tomcat-deploy.yaml
 
 이제 다른 서버에서 부하를 발생시키자. 
 ```
-curl -o /dev/null -s -w "HTTP status : %{http_code}  response time: %{time_total}\n" http://35.229.58.204/miniboard/post/3
+#!/bin/bash
+# test.sh
+while true; do
+   curl -o /dev/null -s -w "HTTP status : %{http_code}  response time: %{time_total}\n" http://35.229.58.204/miniboard/post/3
+   sleep 0.01
+done
 ```
 결과는 생각보다 놀라운데, 최대 응답시간이 1.2초 정도로 나왔다. <br>
 물론 누락되는 패킷은 없다.<br>
