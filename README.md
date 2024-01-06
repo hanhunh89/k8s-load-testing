@@ -296,4 +296,70 @@ a에서 b로 바뀌는 와중에 패킷이 하나 빠지는 것을 볼 수 있�
 7. gracefulShutdownPeriod가 지난 후 Pod이 완전히 종료됩니다
 ```
 loadbalancer에서 패킷 전송이 중단된 이후에 시간을 두어서<br>
-pod가 패킷을 모두 처리하기 위해서는 prestop을 사용해야 한다. 
+pod가 패킷을 모두 처리하기 위해서는 prestop을 사용해야 한다. <br>
+prestop은 아래와 같이 설정한다. 
+```
+#tomcat2-deploy.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tomcat-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: tomcat
+  template:
+    metadata:
+      labels:
+        app: tomcat
+    spec:
+      terminationGracePeriodSeconds: 120
+      initContainers:
+       - name: git-clone-init-container
+         image: alpine/git:latest
+         command: ['git', 'clone', 'https://github.com/hanhunh89/index1.git', '/git-repo/a']
+         volumeMounts:
+         - name: git-repo-volume
+           mountPath: /git-repo
+      containers:
+      - name: tomcat-container
+        image: tomcat:9
+        resources:
+          requests:
+            memory: "100Mi"
+            cpu: "50m"
+        readinessProbe:   
+          httpGet:        
+            path: a 
+            port: 8080
+          initialDelaySeconds: 10 
+          periodSeconds: 5       
+        volumeMounts:
+        - name: git-repo-volume
+          mountPath: /usr/local/tomcat/webapps
+        lifecycle: # lifecycle 정의
+          preStop:   #prestop 정의
+            exec:
+              command: ["/bin/sh", "-c", "sleep 60"]  # 60초 동안 대기
+      volumes:
+      - name: git-repo-volume
+        emptyDir: {}
+```
+pod가 terminating 상태로 전환되어 loadbalancer에서 제거되고도<br>
+60초 동안 더 동작한다. 이 시간동안 남은 트래픽을 처리할 수 있다. <br>
+
+다시 트래픽을 발생시키고 rolling update를 해보자.
+```
+while true; do
+   curl  -s -w "HTTP status : %{http_code}  response time: %{time_total}\n" -L http://35.229.58.204/a
+   sleep 0.01
+done
+```
+이제는 누락되는 패킷이 생기지 않고 rolling update가 정상적으로 실행될 것이다.<br>
+hpa을 적용하면 부하가 늘어날때 pod가 줄었다가, 다시 부하가 줄어들면 pod도 줄어든다.<br>
+이제 hpa로 인해 pod가 줄어들 때도 패킷이 빠지지 않을 수 있다.<br>
+
+# 이제 트래픽의 로드가 바뀌거나 수시로 발생하는 업데이트에도 시스템 관리자는 발뻣고 잘 수 있다. 
+
+# 끗. 
